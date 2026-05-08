@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{COURSE_CODE}} {{COURSE_NAME}} - Learning Sheets</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <span class="header-title">{{COURSE_CODE}} {{COURSE_NAME}}</span>
+      <nav class="header-nav">
+        <a href="index.html" class="nav-link active">Learning Sheets</a>
+        <a href="setup-guide.html" class="nav-link">Setup Guide</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="hero">
+      <span class="hero-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        {{COURSE_CODE}}
+      </span>
+      <h1>{{COURSE_NAME}}</h1>
+      <p class="hero-subtitle">Weekly Learning Sheets</p>
+    </div>
+
+    <div class="week-grid" id="week-grid">
+    </div>
+  </main>
+
+  <footer>
+    <p class="footer-text">
+      Built with <a href="https://typst.app" target="_blank">Typst</a> ·
+      Deployed via <a href="https://pages.github.com" target="_blank">GitHub Pages</a>
+    </p>
+  </footer>
+
+  <script>
+    const weekGrid = document.getElementById('week-grid');
+    const pages = {{PAGES_JSON}};
+
+    if (pages.length === 0) {
+      weekGrid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📚</div>
+          <p>No learning sheets available yet.<br>Check back soon!</p>
+        </div>
+      `;
+    } else {
+      pages.forEach(page => {
+        const card = document.createElement('a');
+        card.href = page.file;
+        card.className = 'week-card';
+        // Use title if available, otherwise fallback to "Week X — Learning Sheet"
+        const displayTitle = page.title || `${page.week} — Learning Sheet`;
+        card.innerHTML = `
+          <div class="week-number">${page.weekNum}</div>
+          <div class="week-content">
+            <div class="week-title">${displayTitle}</div>
+            <div class="week-desc">Interactive learning materials and exercises</div>
+          </div>
+          <div class="arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </div>
+        `;
+        weekGrid.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>

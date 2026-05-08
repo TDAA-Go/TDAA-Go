@@ -1,0 +1,187 @@
+name: Release Course Materials to Zulip
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      test_datetime:
+        description: 'Override datetime in Beijing time (YYYY-MM-DDTHH:MM)'
+        required: false
+        type: string
+
+concurrency:
+  group: release-materials
+  cancel-in-progress: false
+
+env:
+  # Set this to your Zulip stream name. Bootstrap fills it from config.typ.
+  ZULIP_STREAM: {{ZULIP_STREAM}}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ env.ZULIP_STREAM != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Typst
+        uses: typst-community/setup-typst@v4
+
+      - name: Determine current Beijing time
+        id: time
+        env:
+          TEST_DATETIME: ${{ inputs.test_datetime }}
+        run: |
+          if [ -n "$TEST_DATETIME" ]; then
+            CURRENT_DATE=$(echo "$TEST_DATETIME" | cut -dT -f1)
+            CURRENT_HOUR=$(echo "$TEST_DATETIME" | cut -dT -f2 | cut -d: -f1)
+          else
+            NOW=$(TZ=Asia/Shanghai date +%Y-%m-%dT%H)
+            CURRENT_DATE=${NOW%T*}
+            CURRENT_HOUR=${NOW#*T}
+          fi
+          echo "date=$CURRENT_DATE" >> "$GITHUB_OUTPUT"
+          echo "hour=$CURRENT_HOUR" >> "$GITHUB_OUTPUT"
+          echo "Current Beijing time: ${CURRENT_DATE} ${CURRENT_HOUR}:00"
+
+      - name: Process scheduled events
+        env:
+          ZULIP_BOT_EMAIL: ${{ secrets.ZULIP_BOT_EMAIL }}
+          ZULIP_BOT_API_KEY: ${{ secrets.ZULIP_BOT_API_KEY }}
+          ZULIP_SITE: ${{ secrets.ZULIP_SITE }}
+          CURRENT_DATE: ${{ steps.time.outputs.date }}
+          CURRENT_HOUR: ${{ steps.time.outputs.hour }}
+        run: |
+          set -euo pipefail
+
+          SCHEDULE="coursedesign/release-schedule.json"
+
+          # Filter events matching current date and hour
+          EVENTS=$(jq -c --arg d "$CURRENT_DATE" --arg h "$CURRENT_HOUR" \
+            '[.[] | select(.date == $d and (.time | split(":")[0]) == $h)]' \
+            "$SCHEDULE")
+
+          COUNT=$(echo "$EVENTS" | jq 'length')
+          echo "Found $COUNT matching event(s) for $CURRENT_DATE $CURRENT_HOUR:00 Beijing time"
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No events to process. Exiting."
+            exit 0
+          fi
+
+          # Helper: upload a PDF to Zulip, return the URI. Exits on failure.
+          upload_pdf() {
+            local filepath="$1"
+            local response uri
+            response=$(curl -s --retry 3 --retry-delay 5 \
+              -X POST "${ZULIP_SITE}/api/v1/user_uploads" \
+              -u "${ZULIP_BOT_EMAIL}:${ZULIP_BOT_API_KEY}" \
+              -F "file=@${filepath}") || { echo "ERROR: curl failed for $filepath" >&2; return 1; }
+            uri=$(echo "$response" | jq -r '.uri')
+            if [ "$uri" = "null" ] || [ -z "$uri" ]; then
+              echo "ERROR: Upload failed for $filepath: $response" >&2
+              return 1
+            fi
+            echo "$uri"
+          }
+
+          # Helper: send a Zulip message. Exits on failure.
+          send_message() {
+            local topic="$1"
+            local content="$2"
+            local response result
+            response=$(curl -s --retry 3 --retry-delay 5 \
+              -X POST "${ZULIP_SITE}/api/v1/messages" \
+              -u "${ZULIP_BOT_EMAIL}:${ZULIP_BOT_API_KEY}" \
+              --data-urlencode "type=stream" \
+              --data-urlencode "to=${ZULIP_STREAM}" \
+              --data-urlencode "topic=${topic}" \
+              --data-urlencode "content=${content}") || { echo "ERROR: curl failed for message send" >&2; return 1; }
+            result=$(echo "$response" | jq -r '.result')
+            if [ "$result" != "success" ]; then
+              echo "ERROR: Message send failed: $response" >&2
+              return 1
+            fi
+          }
+
+          # Process each event (process substitution avoids subshell)
+          while read -r event; do
+            WEEK=$(echo "$event" | jq -r '.week')
+            ACTION=$(echo "$event" | jq -r '.action')
+            TOPIC="Week${WEEK}"
+
+            echo "Processing: week=${WEEK} action=${ACTION}"
+
+            case "$ACTION" in
+              learning-sheet)
+                LS_SRC="week${WEEK}/${WEEK}.learning-sheet.typ"
+                VAL_SRC="week${WEEK}/${WEEK}.validation.typ"
+
+                if [ ! -f "$LS_SRC" ]; then
+                  echo "WARNING: $LS_SRC not found, skipping"
+                  continue
+                fi
+                if [ ! -f "$VAL_SRC" ]; then
+                  echo "WARNING: $VAL_SRC not found, skipping"
+                  continue
+                fi
+
+                typst compile --root . "$LS_SRC" "${WEEK}.learning-sheet.pdf"
+                typst compile --root . "$VAL_SRC" "${WEEK}.validation.pdf"
+
+                LS_URI=$(upload_pdf "${WEEK}.learning-sheet.pdf")
+                VAL_URI=$(upload_pdf "${WEEK}.validation.pdf")
+
+                CONTENT="Week ${WEEK} learning sheet and validation set are released."
+                CONTENT="${CONTENT}"$'\n'"[${WEEK}.learning-sheet.pdf](${LS_URI})"
+                CONTENT="${CONTENT}"$'\n'"[${WEEK}.validation.pdf](${VAL_URI})"
+
+                send_message "$TOPIC" "$CONTENT"
+                echo "Sent learning-sheet for week ${WEEK}"
+                ;;
+
+              validation)
+                VAL_SRC="week${WEEK}/${WEEK}.validation.typ"
+
+                if [ ! -f "$VAL_SRC" ]; then
+                  echo "WARNING: $VAL_SRC not found, skipping"
+                  continue
+                fi
+
+                typst compile --root . --input hide-solution=false "$VAL_SRC" "${WEEK}.validation-answer.pdf"
+
+                VAL_URI=$(upload_pdf "${WEEK}.validation-answer.pdf")
+
+                CONTENT="@**all** Week ${WEEK} validation set with answers is released."
+                CONTENT="${CONTENT}"$'\n'"[${WEEK}.validation-answer.pdf](${VAL_URI})"
+
+                send_message "$TOPIC" "$CONTENT"
+                echo "Sent validation answers for week ${WEEK}"
+                ;;
+
+              test-answer)
+                TEST_SRC="week${WEEK}/${WEEK}.test.typ"
+
+                if [ ! -f "$TEST_SRC" ]; then
+                  echo "WARNING: $TEST_SRC not found, skipping"
+                  continue
+                fi
+
+                typst compile --root . --input hide-solution=false "$TEST_SRC" "${WEEK}.test-answer.pdf"
+
+                TEST_URI=$(upload_pdf "${WEEK}.test-answer.pdf")
+
+                CONTENT="Week ${WEEK} test with answers is released."
+                CONTENT="${CONTENT}"$'\n'"[${WEEK}.test-answer.pdf](${TEST_URI})"
+
+                send_message "$TOPIC" "$CONTENT"
+                echo "Sent test answers for week ${WEEK}"
+                ;;
+
+              *)
+                echo "WARNING: Unknown action '${ACTION}', skipping"
+                ;;
+            esac
+          done < <(echo "$EVENTS" | jq -c '.[]')

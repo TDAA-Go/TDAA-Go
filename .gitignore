@@ -1,0 +1,24 @@
+.DS_Store
+.venv
+.pytest_cache
+.ruff_cache
+.coverage
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Compiled outputs (PDFs are built artifacts, not sources)
+*.learning-sheet.pdf
+*.advanced-learning-sheet.pdf
+*.validation.pdf
+*.test.pdf
+*.test.B.pdf
+*.intro.pdf
+
+# Build directory
+_site/
+
+# Local notes / scratch
+local/
+*/learn-log.md
