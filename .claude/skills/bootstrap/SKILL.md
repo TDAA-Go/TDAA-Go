@@ -69,7 +69,9 @@ If no reference materials are available, fall back to asking each field directly
 | Number of weeks | `13` |
 | Instructor | `Jane Doe` |
 | Institution | `HKUST(GZ)` |
-| Zulip stream (optional) | `DSAA3071-2026-Spring` (blank disables release workflow) |
+| Zulip stream (optional) | `DSAA3071-2026-Spring` — leave blank to skip the release workflow entirely (Step 7 then doesn't apply) |
+
+The Zulip stream is the only optional field. If the user doesn't say they want Zulip drip-release, do not prompt for it — leave it blank and move on. It can be filled in later by editing `config.toml`; the workflow self-disables while it's empty.
 
 ## Step 3: Write `config.toml`
 
@@ -83,7 +85,7 @@ textbook-title   = "Introduction to the Theory of Computation"
 textbook-edition = "3rd ed."
 instructor       = "Jin-Guo Liu"
 institution      = "HKUST(GZ)"
-zulip-stream     = "DSAA3071-2026-Spring"
+zulip-stream     = ""   # optional; "" disables the release workflow. Set only if user opted in.
 textbook-short   = ""   # empty → falls back to textbook-author
 ```
 
@@ -172,6 +174,8 @@ Guidelines:
 Present the schedule to the user, let them adjust ordering/grouping/week count, then write to `coursedesign/schedule.typ`.
 
 ## Step 7: (optional) Seed `coursedesign/release-schedule.json`
+
+Skip this entire step if `zulip-stream` is blank in `config.toml` — the workflow self-disables and no schedule file is needed.
 
 If the user enabled Zulip release, copy `coursedesign/release-schedule.example.json` to `coursedesign/release-schedule.json` and seed the first few entries. Format:
 
