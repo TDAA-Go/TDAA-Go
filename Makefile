@@ -6,7 +6,12 @@ PDF_DIR := $(SITE_DIR)/pdfs
 
 # Course metadata source — prefer config.toml, fall back to the example.
 CFG_FILE := $(shell [ -f config.toml ] && echo config.toml || echo config.toml.example)
-CFG_GET   = $(shell awk -F' *= *' '/^$(1)[[:space:]]*=/{sub(/^[ \t]*"/,"",$$2);sub(/"[ \t]*$$/,"",$$2);print $$2;exit}' $(CFG_FILE))
+# Get raw value, then:
+#   (a) HTML-escape & < > so angle-bracketed placeholders ("<Course Name>")
+#       render literally on the page, and
+#   (b) escape the resulting & as \& so it survives sed's special-char
+#       handling when the value is interpolated into SUB_HTML below.
+CFG_GET   = $(shell awk -F' *= *' '/^$(1)[[:space:]]*=/{sub(/^[ \t]*"/,"",$$2);sub(/"[ \t]*$$/,"",$$2);print $$2;exit}' $(CFG_FILE) | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/&/\\\&/g')
 
 COURSE_CODE      := $(call CFG_GET,course-code)
 COURSE_NAME      := $(call CFG_GET,course-name)
@@ -16,6 +21,7 @@ TEXTBOOK_TITLE   := $(call CFG_GET,textbook-title)
 TEXTBOOK_EDITION := $(call CFG_GET,textbook-edition)
 TEXTBOOK_SHORT_RAW := $(call CFG_GET,textbook-short)
 TEXTBOOK_SHORT   := $(if $(TEXTBOOK_SHORT_RAW),$(TEXTBOOK_SHORT_RAW),$(TEXTBOOK_AUTHOR))
+# TEXTBOOK_INFO intentionally contains <em>; values inside are already escaped.
 TEXTBOOK_INFO    := $(TEXTBOOK_AUTHOR), <em>$(TEXTBOOK_TITLE)</em> ($(TEXTBOOK_EDITION))
 
 # Common sed substitutions for HTML site placeholders.
