@@ -1,10 +1,11 @@
-.PHONY: all clean serve build pdfs viewers index setup-guide about instructor-guide student-guide styles assets compile-tests dump-solutions help watch serve-only
+.PHONY: all clean serve build pdfs viewers index about instructor-guide student-guide styles assets compile-tests dump-solutions help watch serve-only
 
 # Output directory
 SITE_DIR := _site
 PDF_DIR := $(SITE_DIR)/pdfs
 ASSET_DIR := $(SITE_DIR)/assets
 FIG_MAIN_SRC := .github/templates/assets/fig-main.svg
+PORT ?= 8000
 
 # Course metadata source — prefer config.toml, fall back to the example.
 CFG_FILE := $(shell [ -f config.toml ] && echo config.toml || echo config.toml.example)
@@ -43,7 +44,7 @@ VALIDATION_FILES := $(shell find . -path ./templates -prune -o -name "*.validati
 
 all: build
 
-build: pdfs viewers setup-guide about instructor-guide student-guide index
+build: pdfs viewers about instructor-guide student-guide index
 	@echo "✅ Build complete! Run 'make serve' to preview locally."
 
 # Create directories
@@ -137,11 +138,6 @@ assets: $(ASSET_DIR) $(FIG_MAIN_SRC)
 	@echo "🖼️  Copying static assets..."
 	cp $(FIG_MAIN_SRC) $(SITE_DIR)/assets/fig-main.svg
 
-# Render setup guide (substitute course placeholders from config.toml)
-setup-guide: $(SITE_DIR) styles
-	@echo "📚 Rendering setup guide..."
-	@$(SUB_HTML) .github/templates/setup-guide.html > $(SITE_DIR)/setup-guide.html
-
 # Render About TDAA page
 about: $(SITE_DIR) styles assets
 	@echo "📖 Rendering About TDAA page..."
@@ -158,11 +154,11 @@ student-guide: $(SITE_DIR) styles
 	@$(SUB_HTML) .github/templates/student-guide.html > $(SITE_DIR)/student-guide.html
 
 # Generate index page
-index: viewers setup-guide about instructor-guide student-guide styles
+index: viewers about instructor-guide student-guide styles
 	@echo "🏠 Generating index page..."
 	@pages="["; \
 	first=true; \
-	for file in $$(ls $(SITE_DIR)/*.html 2>/dev/null | grep -v index.html | grep -v setup-guide.html | grep -v about.html | grep -v instructor-guide.html | grep -v student-guide.html | sort -V); do \
+	for file in $$(ls $(SITE_DIR)/*.html 2>/dev/null | grep -v index.html | grep -v about.html | grep -v instructor-guide.html | grep -v student-guide.html | sort -V); do \
 		filename=$$(basename "$$file"); \
 		weekNum=$$(echo "$$filename" | grep -oE 'week[0-9]+' | sed 's/week//'); \
 		week="Week $${weekNum}"; \
@@ -187,15 +183,11 @@ index: viewers setup-guide about instructor-guide student-guide styles
 
 # Serve locally
 serve: build
-	@echo "🌐 Starting local server at http://localhost:8000"
-	@echo "   Press Ctrl+C to stop"
-	@cd $(SITE_DIR) && python3 -m http.server 8000
+	@python3 scripts/serve_static.py $(SITE_DIR) --port $(PORT)
 
 # Alternative: serve without rebuilding
 serve-only:
-	@echo "🌐 Starting local server at http://localhost:8000"
-	@echo "   Press Ctrl+C to stop"
-	@cd $(SITE_DIR) && python3 -m http.server 8000
+	@python3 scripts/serve_static.py $(SITE_DIR) --port $(PORT)
 
 # Clean build artifacts
 clean:
@@ -214,7 +206,7 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make build          Build the site (PDFs + viewer pages)"
-	@echo "  make serve          Build then serve at http://localhost:8000"
+	@echo "  make serve          Build then serve locally, starting at http://localhost:$(PORT)"
 	@echo "  make serve-only     Serve without rebuilding"
 	@echo "  make compile-tests  Compile all test.typ and validation.typ to PDF"
 	@echo "  make dump-solutions Compile tests and validations with solutions visible"

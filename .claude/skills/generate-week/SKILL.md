@@ -1,6 +1,6 @@
 ---
 name: generate-week
-description: Use when generating a complete week of materials (learning sheet + tests) through adversarial writer-vs-reviewer debate
+description: Use when generating a complete week of materials, including learning sheets and test bundles, through adversarial writer-vs-reviewer debate
 argument-hint: "[week-number]"
 ---
 
@@ -11,6 +11,10 @@ Week number N = `$ARGUMENTS`.
 Generates all materials for a week:
 1. Learning sheet — via adversarial writer/reviewer debate
 2. Tests (test, test.B, validation) — via writer + reviewer
+
+Tests normally cover only week N. If the immediately previous week has no
+complete test bundle, confirm with the user whether week N's test should cover
+multiple weeks before generating tests.
 
 ## Execution mode: subagents vs. inline
 
@@ -37,7 +41,24 @@ otherwise default to the single-agent fallback.
 1. Read `weekN/*` — if good materials exist, confirm with user before regenerating
 2. Read `weekN/plan.md` if it exists
 3. Read `week{N-1}/*` — note content to avoid overlap
-4. **Pick a motivating task** — the writer agent internally generates 3 candidate task framings, then picks the one that is most interesting, real-world-connected, and suited for group discussion
+4. **Previous-week test gate** — if N > 1, check whether the immediately
+   previous week has a complete test bundle:
+   - `week{N-1}/{N-1}.test.typ`
+   - `week{N-1}/{N-1}.test.B.typ`
+   - `week{N-1}/{N-1}.validation.typ`
+5. If all three previous-week test files exist, set `Test scope = week N only`.
+6. If any previous-week test file is missing, stop before Phase 2 and ask the
+   user:
+
+   > `week{N-1}` does not have a complete test bundle. Should the week N test
+   > cover both week {N-1} and week N, or only week N?
+
+   Do not assume multi-week scope without confirmation.
+   - If the user chooses multi-week scope, set `Test scope = week {N-1} through week N`.
+   - If the user chooses week N only, set `Test scope = week N only`.
+   - If more than one consecutive previous week lacks tests, mention that fact
+     and ask the user to confirm the exact week range to include.
+7. **Pick a motivating task** — the writer agent internally generates 3 candidate task framings, then picks the one that is most interesting, real-world-connected, and suited for group discussion
 
 ---
 
@@ -94,7 +115,11 @@ Spawn a general-purpose agent:
 
 > You are a test writer for this course. Read CLAUDE.md for design principles.
 > Follow the instructions in `.claude/skills/write-tests/SKILL.md`.
-> The learning sheet `weekN/N.learning-sheet.typ` is finalized.
+> Test scope: `week N only` unless the user explicitly confirmed a multi-week
+> scope in Pre-Work. If multi-week scope was confirmed, read every finalized
+> learning sheet in the confirmed scope and treat that combined content as the
+> source of testable material; this overrides the single-learning-sheet input
+> assumption in `write-tests`.
 > Generate `weekN/N.test.typ`, `weekN/N.test.B.typ`, and `weekN/N.validation.typ`.
 
 ### Step 2b — Reviewer
@@ -103,6 +128,10 @@ Spawn a separate general-purpose agent:
 
 > You are a test reviewer for this course.
 > Follow the instructions in `.claude/skills/review-tests/SKILL.md`.
+> Review the tests against the confirmed test scope. If multi-week scope was
+> confirmed, every tested term must appear in one of the finalized learning
+> sheets in that scope, and the validation sheet must make the combined boundary
+> clear to students.
 > Review `weekN/N.test.typ`, `weekN/N.test.B.typ`, and `weekN/N.validation.typ`.
 > End with: `APPROVED`, `REVISE: <issues>`, or `ESCALATE: <blocker>`.
 

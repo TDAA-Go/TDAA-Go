@@ -10,278 +10,79 @@ Pages, and driven by Claude Code skills.
 > course-materials harness that makes the gate livable for students and the
 > production tractable for instructors.
 
-## What you get
-
-- **Weekly materials pipeline** — learning sheet, test, test variant B, and
-  validation set per week; optional research-track advanced learning sheet
-- **Claude Code skills** — `/bootstrap`, `/generate-week`, `/write-learning-sheet`,
-  `/review-learning-sheet`, `/write-tests`, `/review-tests`, `/revise`,
-  `/grade-homework`, `/homework-report`, `/learn`, `/pivot`
-- **Build infrastructure** — `make build` compiles learning sheets to PDF and
-  creates the GitHub Pages viewer; `make compile-tests` builds assessments;
-  `make serve` previews locally
-- **Optional Zulip release workflow** — drip-release materials by date/time
-- **Optional GitHub Pages deployment** on push to `main`
-
-## Instructor Guide — step by step
-
-### Step 0. Prerequisites
-
-You need these on your `$PATH` before running `/bootstrap`:
-
-- **Required:** `typst`, `uv`, `git`, `make`, and the Claude Code CLI
-- **Recommended:** `gh` (lets `/bootstrap` auto-enable GitHub Pages;
-  otherwise you'll flip the switch manually in the repo settings)
-
-Install whichever are missing using your platform's native package manager
-(Homebrew on macOS, apt/dnf/pacman on Linux, winget/scoop on Windows) or the
-official installer from each project's website. If you'd rather not figure
-it out yourself, just start `/bootstrap` — it probes for these on first run
-and offers to install anything missing with the right command for your
-environment.
-
-Skills that grade homework (`/grade-homework`, `/homework-report`) have their
-own runtime checks for `pdftoppm`, `libreoffice`, etc. — those are not
-required for bootstrap or weekly material generation.
-
-You'll also need a **textbook PDF** (or equivalent canonical source: open
-lecture notes, course pack, instructor draft) and a GitHub account.
-Optionally, gather any existing course materials you have (syllabus, past
-lecture slides, past exams) — `/bootstrap` can extract course metadata from
-them so you don't have to type everything by hand.
-
-### Step 1. Fork the template
-
-Pick **one** of these:
+## Quick start
 
 ```bash
-# Option A: fresh clone (recommended)
 gh repo create my-course --private --template GiggleLiu/TDAA-Go --clone
 cd my-course
-
-# Option B: copy locally if the repo isn't on GitHub yet
-cp -r path/to/TDAA-Go ~/my-course
-cd ~/my-course
-git init -b main && git add -A && git commit -m "fork from TDAA-Go"
-```
-
-### Step 2. Bootstrap the course
-
-Open the repo in Claude Code and run the bootstrap skill:
-
-```bash
-claude
-```
-
-```
-> /bootstrap
-```
-
-First, `/bootstrap` asks whether you have existing course materials. If yes,
-drop them into `reference/` (syllabus, lecture slides, past exams as PDF /
-PPTX / DOCX / MD); the skill converts them to markdown and extracts course
-code, name, textbook, instructor, institution, and weekly topics, each tagged
-with its source file and a confidence level. You confirm or correct the
-extracted values, and only missing fields are asked manually. See
-`reference/README.md` for the list of valuable inputs.
-
-If you have no reference materials, `/bootstrap` falls back to asking every
-field directly: course code, course name, textbook author/title/edition,
-week count, instructor, institution, and (optionally) a Zulip stream name.
-Then you'll be asked for your **textbook PDF path(s)**.
-
-What `/bootstrap` produces:
-- `reference/*.md` (existing materials converted to markdown)
-- `config.toml` (course metadata; the checked-in `config.typ` shim loads it
-  and re-exports each field, so every Typst template imports from `config.typ`
-  but the values you edit live in `config.toml`)
-- Substituted placeholders in `.github/templates/*.html` and
-  `.github/workflows/release-materials.yml`
-- `textbook/01.md`, `02.md`, … (extracted definitions, theorems, proofs,
-  examples — review and correct these before continuing)
-- `coursedesign/schedule.typ` (weekly section assignments — adjust before
-  continuing)
-
-Verify: `grep -r '{{' .github/` should print nothing (no unfilled placeholders).
-
-### Step 3. Generate your first week
-
-```
+claude              # then in Claude Code:
+> /bootstrap        # asks a few questions, writes config.toml, extracts the textbook
 > /generate-week 1
 ```
 
-This runs the full pipeline: writer + reviewer debate for the learning sheet,
-then writer + reviewer for the test, test variant B, and validation set. You'll
-end up with `week1/1.learning-sheet.typ`, `1.test.typ`, `1.test.B.typ`, and
-`1.validation.typ`.
+Need anything else installed (Typst, `uv`, `gh`)? `/bootstrap` probes and
+offers the right install command for your platform.
 
-If you want finer control, use the smaller skills:
-- `/write-learning-sheet 1` — just the learning sheet
-- `/review-learning-sheet 1` — review against quality criteria
-- `/revise 1` — interactive chunk-by-chunk revision
-- `/write-tests 1` — generate tests from a finalized learning sheet
-- `/review-tests 1` — review tests for scope/correctness
+## Documentation
 
-### Step 4. Build and preview locally
+The full instructor guide lives in the deployed site. After `make build`,
+open `_site/instructor-guide.html` (or `make serve` and visit
+<http://localhost:8000/instructor-guide.html>). It covers install, fork,
+bootstrap, generate, the review habit, publish, the weekly classroom rhythm,
+and grading. Students get a parallel `student-guide.html`; the method itself
+is on `about.html`.
 
-```bash
-make serve   # builds, then opens http://localhost:8000
-```
-
-The site lists every weekly learning sheet with a built-in PDF viewer.
-Single-file iteration:
-
-```bash
-typst compile --root . week1/1.learning-sheet.typ
-```
-
-### Step 5. Push to GitHub & enable Pages
-
-```bash
-git add -A && git commit -m "week 1 materials"
-git push origin main
-```
-
-Then on GitHub: **Settings → Pages → Source: GitHub Actions**. The
-`deploy-pages.yml` workflow rebuilds and publishes on every push to `main` that
-touches `.typ`, `.html`, or the Makefile.
-
-### Step 6. (Optional) Wire up Zulip drip release
-
-If you set a `zulip-stream` in `config.toml`, the `release-materials.yml`
-workflow runs hourly and releases learning sheets / validation answers / test
-answers per a schedule you control.
-
-1. Repo **Settings → Secrets and variables → Actions** → add three secrets:
-   - `ZULIP_BOT_EMAIL`
-   - `ZULIP_BOT_API_KEY`
-   - `ZULIP_SITE` (e.g. `https://yourorg.zulipchat.com`)
-2. Copy the example schedule and edit dates/times (Beijing time):
-
-   ```bash
-   cp coursedesign/release-schedule.example.json coursedesign/release-schedule.json
-   $EDITOR coursedesign/release-schedule.json
-   git add coursedesign/release-schedule.json && git commit -m "release schedule" && git push
-   ```
-
-### Step 7. Iterate weekly
-
-For each subsequent week:
-
-```
-> /generate-week 2
-> /review-learning-sheet 2     # if you skipped the full pipeline
-> /revise 2                    # polish prose, audit tests
-```
-
-```bash
-make build                     # build before pushing
-# optional local preview: make serve
-git add week2/ && git commit -m "week 2" && git push
-```
-
-### Step 8. Grade homework
-
-When students submit homework (mixed PDF / JPG / DOCX in a folder):
-
-```
-> /grade-homework
-> /homework-report             # builds a teacher-facing PDF report
-```
-
-Produces a grades CSV plus per-student feedback, with explicit flags on items
-that need teacher review.
-
----
-
-### Quick reference — the full skill list
+## Skills
 
 | Skill | When to use |
 |-------|-------------|
 | `/bootstrap` | Once, right after forking |
-| `/generate-week N` | Generate a full week (learning sheet + tests) |
-| `/write-learning-sheet N` | Just write the learning sheet |
-| `/review-learning-sheet N` | Review against pedagogical criteria |
-| `/revise N` | Interactive polish + test audit |
+| `/generate-week N` | Full week pipeline (learning sheet + tests, with reviewer debate) |
+| `/write-learning-sheet N` | Just the learning sheet |
+| `/review-learning-sheet N` | Audit against pedagogical criteria |
+| `/revise N` | Interactive chunk-by-chunk polish + test audit |
 | `/write-tests N` | Generate tests from a finalized learning sheet |
-| `/review-tests N` | Audit tests for scope & correctness |
+| `/review-tests N` | Audit tests for scope and correctness |
 | `/grade-homework` | Grade a folder of student submissions |
 | `/homework-report` | PDF report from grading output |
 | `/learn N` | Student-side: walk through a learning sheet interactively |
 | `/pivot N` | Re-skin a learning sheet's task to a new context |
+
+## Build commands
+
+```bash
+make build              # PDFs + HTML viewers + guides
+make serve              # build, then http://localhost:8000
+make compile-tests      # test/validation PDFs
+make dump-solutions     # same, solutions visible
+make clean              # remove _site/
+```
+
+Single file: `typst compile --root . weekN/N.learning-sheet.typ`.
 
 ## Layout
 
 ```
 config.toml.example                  # Edit (or run /bootstrap) → config.toml
 config.typ                           # Shim that loads config.toml for templates
-Makefile                             # `make build` / `make serve`
-templates/                           # Typst libraries (do not edit per-week)
-├── learning-sheet.typ               # Shared lib: theorem envs, prompt blocks
-├── advanced-learning-sheet.typ      # Research-track lib (deep dives, gedanken)
-├── test.typ                         # Shared lib: question counter, solution toggle
-└── week-template/                   # Copy to weekN/ to start a week
+Makefile                             # make build / make serve
+templates/                           # Shared Typst libs (learning-sheet, test, week-template/)
 coursedesign/
 ├── weekly-materials-guide.md        # Pedagogical principles & checklists
-├── schedule.example.typ             # Example schedule (bootstrap fills in real one)
+├── schedule.example.typ             # Example schedule (bootstrap fills the real one)
 └── release-schedule.example.json    # Example Zulip release schedule
 .github/
-├── templates/{index,viewer,setup-guide}.html, styles.css
-└── workflows/
-    ├── deploy-pages.yml             # Build PDFs + viewer; deploy to Pages
-    └── release-materials.yml        # Hourly Zulip drip release (optional)
-.claude/
-├── CLAUDE.md                        # Project instructions for Claude Code
-├── rules/typst.md                   # Typst writing conventions
-└── skills/                          # Slash commands
+├── templates/                       # index, viewer, about, instructor-guide, student-guide, styles.css
+└── workflows/                       # deploy-pages.yml, release-materials.yml (Zulip drip, optional)
+.claude/                             # CLAUDE.md, rules/, skills/
 ```
 
-After bootstrap, you'll also have:
-
-```
-config.toml                          # Course metadata (filled by /bootstrap)
-textbook/NN.md                       # Extracted textbook chapters
-coursedesign/schedule.typ            # Weekly section assignments
-weekN/                               # Per-week materials (created by /generate-week)
-```
-
-## Design principles
-
-1. **Flatten the learning curve** — break content into weekly chunks with clear
-   objectives
-2. **Remove uncertainty** — pair every test with a validation set that defines
-   the test boundary
-3. **Enable AI-assisted study** — every learning sheet ships with copy-paste
-   prompts students run against any LLM
-
-## Build commands
-
-```bash
-make build              # Build entire site (PDFs + HTML viewers)
-make compile-tests      # Compile all test and validation files
-make dump-solutions     # Compile tests/validations with solutions visible
-make serve              # Build then serve locally at http://localhost:8000
-make serve-only         # Serve without rebuilding
-make clean              # Remove _site/
-```
-
-Single-file compile:
-
-```bash
-typst compile weekN/N.learning-sheet.typ
-```
-
-## Requirements
-
-- [Typst](https://typst.app) (latest)
-- Python 3 (for `make serve` and bootstrap scripts)
-- [`uv`](https://docs.astral.sh/uv/) (for installing bootstrap script deps)
-- Optional: [`entr`](https://github.com/eradman/entr) for `make watch`
+After bootstrap, you'll also have `config.toml`, `textbook/NN.md` (extracted
+chapters), `coursedesign/schedule.typ`, and `weekN/` (per-week materials).
 
 ## Citing TDAA
 
-If TDAA-Go shapes a course you teach or a paper you write, please cite the
-methodology paper this template was extracted from:
+If TDAA-Go shapes a course you teach or a paper you write, please cite:
 
 > Jin-Guo Liu, Shang-Qi Lu, Xin-Ran Shi, Long-Li Zheng and Wei Wang.
 > *High-Frequency Test-Driven Learning with AI: Making Strict Quality Gates
