@@ -32,6 +32,34 @@ bootstrap, generate, the review habit, publish, the weekly classroom rhythm,
 and grading. Students get a parallel `student-guide.html`; the method itself
 is on `about.html`.
 
+## Optional Zulip Grading
+
+If your students already use Zulip, they can DM homework photos to a
+course-specific bot and the instructor can pull, grade, and return feedback
+from the same workflow.
+
+```
+> /setup-zulip-grading         # one-time: creates the bot, writes .zuliprc, seeds roster
+> /zulip-mark-feedback N       # per homework: pulls DMs, grades, sends feedback
+```
+
+`/setup-zulip-grading` walks you through getting a personal Zulip API key,
+creates a generic bot in your realm via the API (no manual UI clicks unless
+your realm restricts bot creation), and bootstraps `coursedesign/roster.csv`
+(committed; the Zulip-email → student-id mapping).
+
+`/zulip-mark-feedback N` has four checkpointed phases:
+
+1. **Pull** — fetches DMs in the active window, drops attachments into
+   `weekN/submissions/` with the filename convention `/grade-homework` expects.
+2. **Grade** — delegates to the unchanged `/grade-homework`.
+3. **Report** — optionally delegates to `/homework-report`.
+4. **Send** — DMs each student their `feedback/<student_id>.md` back via the
+   bot. Default is "preview locally first" — nothing goes out until you say so.
+
+State files (`.zuliprc`, `week*/submissions/`, `week*/zulip-*.json`) are
+gitignored. The roster is committed.
+
 ## Skills
 
 | Skill | When to use |
@@ -45,6 +73,8 @@ is on `about.html`.
 | `/review-tests N` | Audit tests for scope and correctness |
 | `/grade-homework` | Grade a folder of student submissions |
 | `/homework-report` | PDF report from grading output |
+| `/setup-zulip-grading` | Once: create a Zulip grading bot + bootstrap the student roster |
+| `/zulip-mark-feedback N` | Per HW: pull DMs from the bot, grade, DM feedback back |
 | `/learn N` | Student-side: walk through a learning sheet interactively |
 | `/pivot N` | Re-skin a learning sheet's task to a new context |
 
