@@ -277,6 +277,26 @@ git add weekN &amp;&amp; git commit -m "week N" &amp;&amp; git push</code></pre>
         beside the per-question marks. Return tests fast enough that
         feedback helps the next learning cycle.
       </p>
+
+      <div class="callout">
+        <div class="callout-title">Optional · Zulip submission and feedback</div>
+        <p>
+          If your students already use Zulip, they can DM homework photos
+          to a course-specific bot. The instructor can then pull
+          submissions, grade them, and return feedback through the same
+          workflow:
+        </p>
+<pre><code>&gt; /setup-zulip-grading
+&gt; /zulip-mark-feedback N</code></pre>
+        <p style="margin-bottom:0;">
+          <code>/setup-zulip-grading</code> creates the bot, writes
+          <code>.zuliprc</code>, and seeds <code>coursedesign/roster.csv</code>.
+          <code>/zulip-mark-feedback N</code> pulls DMs into
+          <code>weekN/submissions/</code>, delegates grading to
+          <code>/grade-homework</code>, optionally builds the report, and
+          previews feedback before sending DMs back to students.
+        </p>
+      </div>
     </section>
 
   </main>
