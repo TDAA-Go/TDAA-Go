@@ -18,6 +18,46 @@ Do NOT use for: single-file grading (just read it inline), plagiarism detection,
 - `<working_dir>/grades/grades.csv` — one row per student, per-question columns, total, flags.
 - `<working_dir>/grades/feedback/<student>.md` — English feedback, per-question breakdown, flags summary.
 
+## Prerequisites (conditional on submission formats)
+
+Only `.docx` submissions need an external conversion toolchain. PDF and image
+submissions go through Python alone, so most courses won't need anything
+beyond `uv`.
+
+Probe at the start of Step 1 (after `discover.py` reports what's present):
+
+```bash
+# Only if discover.py finds any .docx submissions
+if ls "$PWD"/*.docx >/dev/null 2>&1; then
+  if ! command -v libreoffice >/dev/null 2>&1 && ! command -v soffice >/dev/null 2>&1; then
+    if ! { command -v pandoc >/dev/null 2>&1 \
+        && { command -v google-chrome >/dev/null 2>&1 \
+          || command -v chromium     >/dev/null 2>&1; }; }; then
+      echo "MISSING: docx toolchain (need libreoffice OR pandoc+browser)"
+    fi
+  fi
+fi
+```
+
+If the toolchain is missing, ask via `AskUserQuestion` whether to install
+before grading begins. Without it, `.docx` submissions are silently flagged
+`needs_manual_review` and grading proceeds for the rest — call out exactly
+how many students that affects so the user can make an informed choice.
+
+When the user says yes, figure out the right install command for their
+environment at runtime (inspect `uname -s` and which of `brew`/`apt`/`dnf`/
+`pacman`/`winget`/etc. is available — see `bootstrap` Step 0 for the
+detection pattern), and propose the commands via `AskUserQuestion` before
+running them. Notes on package naming:
+
+- `libreoffice` may be `libreoffice-fresh` on Arch and `--cask libreoffice`
+  on Homebrew; on Windows use `TheDocumentFoundation.LibreOffice` via winget.
+- Headless browser for the fallback path: `google-chrome` or `chromium` —
+  either works.
+- `inkscape` is only needed by the fallback path when a `.docx` embeds WMF/EMF
+  images. Install on demand if `to_images.py` flags missing inkscape during a
+  run; otherwise leave it alone.
+
 ## Workflow
 
 Skill root: `~/.claude/skills/grade-homework/`. Run helper scripts from that root.

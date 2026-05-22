@@ -27,20 +27,28 @@ Pages, and driven by Claude Code skills.
 
 ### Step 0. Prerequisites
 
-Install once:
+You need these on your `$PATH` before running `/bootstrap`:
 
-```bash
-# macOS (Homebrew)
-brew install typst gh uv
-brew install --cask claude-code   # or: npm i -g @anthropic-ai/claude-code
+- **Required:** `typst`, `uv`, `git`, `make`, and the Claude Code CLI
+- **Recommended:** `gh` (lets `/bootstrap` auto-enable GitHub Pages;
+  otherwise you'll flip the switch manually in the repo settings)
 
-# Linux: see typst.app, github.com/cli/cli, docs.astral.sh/uv, claude.com/claude-code
-```
+Install whichever are missing using your platform's native package manager
+(Homebrew on macOS, apt/dnf/pacman on Linux, winget/scoop on Windows) or the
+official installer from each project's website. If you'd rather not figure
+it out yourself, just start `/bootstrap` — it probes for these on first run
+and offers to install anything missing with the right command for your
+environment.
 
-You'll also need a **textbook PDF** (your course's primary text) and a GitHub
-account. Optionally, gather any existing course materials you have (syllabus,
-past lecture slides, past exams) — `/bootstrap` can extract course metadata
-from them so you don't have to type everything by hand.
+Skills that grade homework (`/grade-homework`, `/homework-report`) have their
+own runtime checks for `pdftoppm`, `libreoffice`, etc. — those are not
+required for bootstrap or weekly material generation.
+
+You'll also need a **textbook PDF** (or equivalent canonical source: open
+lecture notes, course pack, instructor draft) and a GitHub account.
+Optionally, gather any existing course materials you have (syllabus, past
+lecture slides, past exams) — `/bootstrap` can extract course metadata from
+them so you don't have to type everything by hand.
 
 ### Step 1. Fork the template
 

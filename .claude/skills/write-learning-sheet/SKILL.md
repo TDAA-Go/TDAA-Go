@@ -13,7 +13,7 @@ Week number N = `$ARGUMENTS`.
 1. `coursedesign/schedule.typ` — find textbook sections assigned to week N
 2. `textbook/*.md` — extract ALL definitions and theorems from those sections
 3. `templates/week-template/N.learning-sheet.typ` — start from this template (structural comments embedded)
-4. `week1/1.learning-sheet.typ` — **canonical reference** for prose quality
+4. `week1/1.learning-sheet.typ` — **canonical reference** for prose quality (skip if generating week 1 itself; rely on `templates/learning-sheet.typ` + `coursedesign/weekly-materials-guide.md` — week 1 becomes canonical after approval)
 5. `weekN/plan.md` — specific requirements (if exists)
 6. `week{N-1}/*` — ensure NO content overlap with previous week
 

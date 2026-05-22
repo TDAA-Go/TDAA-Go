@@ -12,6 +12,26 @@ Generates all materials for a week:
 1. Learning sheet — via adversarial writer/reviewer debate
 2. Tests (test, test.B, validation) — via writer + reviewer
 
+## Execution mode: subagents vs. inline
+
+The phases below describe a **multi-agent** flow (separate writer/reviewer/verifier
+subagents). If the active environment doesn't permit subagent delegation, or the
+user prefers everything in one session, use the **single-agent fallback**:
+
+- Skip every `Spawn a ... agent` step.
+- Instead, invoke the named skill directly in *this* session:
+  - "Writer" → invoke `write-learning-sheet` / `write-tests`
+  - "Reviewer" → invoke `review-learning-sheet` / `review-tests`
+  - "Verifier" → fact-check inline using textbook reads + web search
+- Keep the same loop structure: write → review → revise (up to 3 rounds for the
+  learning sheet, 2 rounds for tests). The reviewer-output verdicts
+  (`APPROVED` / `REVISE` / `ESCALATE`) and escalation triggers still apply.
+- Before each "review" pass, clear short-term assumptions: re-read the artifact
+  from disk so the review isn't biased by what was just written.
+
+Pick subagent mode when the user explicitly opts in or has it enabled by default;
+otherwise default to the single-agent fallback.
+
 ## Pre-Work
 
 1. Read `weekN/*` — if good materials exist, confirm with user before regenerating

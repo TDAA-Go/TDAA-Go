@@ -12,7 +12,7 @@ Week number N = `$ARGUMENTS`.
 
 1. `coursedesign/schedule.typ` — find textbook sections assigned to week N
 2. `textbook/*.md` — extract definitions, theorems, and proof strategies from those sections. Note key steps for each proof — you will compare against the learning sheet.
-3. `week1/1.learning-sheet.typ` — canonical quality reference
+3. `week1/1.learning-sheet.typ` — canonical quality reference (skip if revising week 1 itself; rely on `templates/learning-sheet.typ` + `coursedesign/weekly-materials-guide.md` — week 1 becomes canonical after approval)
 4. `weekN/N.learning-sheet.typ` — the sheet to revise
 
 ## Startup

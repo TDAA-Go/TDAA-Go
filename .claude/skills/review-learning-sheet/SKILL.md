@@ -11,7 +11,7 @@ Week number is provided as `$ARGUMENTS`. Replace N below with the week number.
 ## Inputs
 
 1. `weekN/N.learning-sheet.typ` — file under review
-2. `week1/1.learning-sheet.typ` — canonical quality reference
+2. `week1/1.learning-sheet.typ` — canonical quality reference (skip if reviewing week 1 itself; rely on `templates/learning-sheet.typ` + `coursedesign/weekly-materials-guide.md` and the must-have/good-to-have criteria — week 1 becomes canonical after approval)
 3. Relevant `textbook/*.md` chapters (check `coursedesign/schedule.typ` for assigned sections)
 
 ## Process

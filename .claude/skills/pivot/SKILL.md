@@ -14,7 +14,7 @@ Read these files before starting:
 
 1. `weekN/N.learning-sheet.typ` — the finalized sheet to pivot
 2. Relevant `textbook/*.md` chapters (check `coursedesign/schedule.typ` for assigned textbook sections)
-3. `week1/1.learning-sheet.typ` — reference for how task boxes and examples are structured
+3. `week1/1.learning-sheet.typ` — reference for how task boxes and examples are structured (skip if pivoting week 1 itself; use `templates/week-template/N.learning-sheet.typ` instead)
 
 ## Concern 1: Creative — Pivot Task & Examples
 

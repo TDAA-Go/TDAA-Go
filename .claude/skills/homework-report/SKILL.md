@@ -21,11 +21,71 @@ Do NOT use for:
 - `report/grading_report.typ` — the Typst source, overwritable and hand-editable.
 - `report/grading_report.pdf` — compiled report, one page per student.
 
-## Prerequisites
+## Prerequisites (hard gate)
 
-- `typst` on PATH (via `cargo install typst-cli` or the Typst releases).
-- `pdftoppm` (poppler-utils) for PDF→image.
-- Optional: `libreoffice`/`soffice` OR `pandoc + google-chrome/chromium` for DOCX submissions (shared toolchain with `grade-homework`).
+Probe before running. If a required tool is missing, **stop and ask the user
+for permission to install** via the platform-appropriate command below.
+
+Required:
+
+| Tool       | Probe              | Purpose                       |
+| ---------- | ------------------ | ----------------------------- |
+| `typst`    | `typst --version`  | Compiles the report           |
+| `pdftoppm` | `pdftoppm -v`      | Renders PDF submissions → JPG |
+
+Conditional (only if any submission is `.docx` — check the working dir first):
+
+| Path       | Tools                                                  | Notes                       |
+| ---------- | ------------------------------------------------------ | --------------------------- |
+| Preferred  | `libreoffice` (or `soffice`)                           | Single tool, best fidelity  |
+| Fallback   | `pandoc` + `google-chrome` / `chromium` (± `inkscape`) | `inkscape` only for WMF/EMF |
+
+Skip this conditional probe entirely if there are no `.docx` files in the
+working directory.
+
+### Probe + install flow
+
+```bash
+# Required
+need=()
+for cmd in typst pdftoppm; do
+  command -v "$cmd" >/dev/null 2>&1 || need+=("$cmd")
+done
+
+# Conditional: only if .docx present
+if ls "$PWD"/*.docx >/dev/null 2>&1; then
+  if ! command -v libreoffice >/dev/null 2>&1 && ! command -v soffice >/dev/null 2>&1; then
+    if ! { command -v pandoc >/dev/null 2>&1 \
+        && { command -v google-chrome >/dev/null 2>&1 \
+          || command -v chromium     >/dev/null 2>&1; }; }; then
+      need+=("docx-toolchain")  # see install table
+    fi
+  fi
+fi
+[ ${#need[@]} -gt 0 ] && echo "MISSING: ${need[*]}" || echo "OK"
+```
+
+If anything is missing, figure out the right install command for the user's
+environment at runtime (inspect `uname -s` and which of `brew`/`apt`/`dnf`/
+`pacman`/`winget`/etc. is available — see `bootstrap` Step 0 for the
+detection pattern) and propose the commands via `AskUserQuestion` before
+running them. Tool-to-package notes you'll need:
+
+- `pdftoppm` lives in the `poppler` / `poppler-utils` package across most
+  package managers.
+- `libreoffice` may be `libreoffice-fresh` on Arch and `--cask libreoffice`
+  on Homebrew; on Windows use `TheDocumentFoundation.LibreOffice` via winget.
+- Headless browser for the fallback path: `google-chrome` or `chromium` —
+  either one works.
+- `typst` isn't yet in `apt`/`dnf` — fall back to the official prebuilt
+  binary (https://github.com/typst/typst/releases) when needed.
+- `inkscape` (only needed if a `.docx` embeds WMF/EMF that the fallback path
+  must convert) is truly optional — `to_images.py` flags `needs_manual_review`
+  and continues if it's missing.
+
+After installation, re-probe with the script above. Do not proceed until the
+required set is satisfied; if the user declines, abort the skill with a clear
+message.
 
 ## Workflow
 

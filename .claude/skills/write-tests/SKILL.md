@@ -19,7 +19,7 @@ Week number N = `$ARGUMENTS`.
 3. `templates/week-template/N.test.B.typ` — alternative test template
 4. `templates/week-template/N.validation.typ` — validation template
 5. `coursedesign/weekly-materials-guide.md` — test/validation checklists
-6. `week1/1.test.typ`, `week1/1.test.B.typ`, `week1/1.validation.typ` — canonical references
+6. `week1/1.test.typ`, `week1/1.test.B.typ`, `week1/1.validation.typ` — canonical references (skip if writing tests for week 1 itself; rely on the three `templates/week-template/N.test*.typ` and `N.validation.typ` files — week 1 becomes canonical after approval)
 
 ## Output
 

@@ -12,7 +12,7 @@ Week number N = `$ARGUMENTS`.
 
 1. `weekN/N.learning-sheet.typ` — the source of all testable content
 2. `weekN/N.test.typ`, `weekN/N.test.B.typ`, `weekN/N.validation.typ` — files under review
-3. `week1/1.test.typ`, `week1/1.validation.typ` — canonical references
+3. `week1/1.test.typ`, `week1/1.validation.typ` — canonical references (skip if reviewing week 1 itself; rely on `templates/week-template/N.test.typ` + `N.validation.typ` and the test-scope rule — week 1 becomes canonical after approval)
 
 ## Process
 
