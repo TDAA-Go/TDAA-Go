@@ -22,6 +22,9 @@ _site/
 local/
 */learn-log.md
 
+# Brainstorming spec drafts (kept local; not part of the course harness)
+docs/superpowers/
+
 # Reference materials: keep converted .md, ignore the binary source files
 reference/*.pdf
 reference/*.pptx
