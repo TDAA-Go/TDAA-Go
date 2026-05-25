@@ -1,7 +1,7 @@
 # TDAA-Go
 
 [![Instructor guide](https://img.shields.io/badge/Instructor%20guide-open-2563eb)](https://giggleliu.github.io/TDAA-Go/instructor-guide.html)
-[![Documentation](https://img.shields.io/badge/Documentation-GitHub%20Pages-brightgreen)](https://giggleliu.github.io/TDAA-Go/)
+[![Demo site](https://img.shields.io/badge/Demo%20site-live-brightgreen)](https://giggleliu.github.io/TDAA-Go/)
 
 A forkable, ready-to-launch skeleton for **Test-Driven, AI-Assisted (TDAA)**
 courses. Weekly learning sheets, closed-book tests, validation sets, and a
